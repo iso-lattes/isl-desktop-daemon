@@ -168,10 +168,14 @@ fn load_config() -> Result<RuntimeConfig> {
         .to_str()
         .ok_or_else(|| anyhow!(".cli-flags.toml path is not UTF-8"))?;
     let parser = BundledFlags2Env::new();
-    parser.audit_config(Some(config_path_text))?;
+    parser
+        .audit_config(Some(config_path_text))
+        .map_err(|error| anyhow!(error.to_string()))?;
 
     let argv = env::args().collect::<Vec<_>>();
-    let parsed = parser.parse_structured(&argv, Some(config_path_text))?;
+    let parsed = parser
+        .parse_structured(&argv, Some(config_path_text))
+        .map_err(|error| anyhow!(error.to_string()))?;
     if !parsed.unknown_options.is_empty() {
         bail!(
             "unknown command-line options: {}",
@@ -187,7 +191,9 @@ fn load_config() -> Result<RuntimeConfig> {
 
     let mut raw = env::vars().collect::<HashMap<_, _>>();
     raw.extend(parsed.provided_flags);
-    let raw_config = parser.coerce::<CliConfig, _>(&raw, Some(config_path_text))?;
+    let raw_config = parser
+        .coerce::<CliConfig, _>(&raw, Some(config_path_text))
+        .map_err(|error| anyhow!(error.to_string()))?;
 
     let addr = parse_loopback_addr(&raw_config.ISL_DESKTOP_ADDR)?;
     let worker_command = raw_config.ISL_WORKER_COMMAND.trim().to_owned();
@@ -623,7 +629,9 @@ mod tests {
             tenant_id: "tenant-a".to_owned(),
             deployment_id: "deploy-123".to_owned(),
         };
-        let path = artifact_path(&root, &key, "worker.js").expect("valid fixture path");
-        assert!(path.ends_with("tenant-a/deploy-123/worker.js"));
+        let valid = artifact_path(&root, &key, "worker.js")
+            .map(|path| path.ends_with("tenant-a/deploy-123/worker.js"))
+            .unwrap_or(false);
+        assert!(valid);
     }
 }
