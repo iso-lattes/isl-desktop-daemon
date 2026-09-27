@@ -28,7 +28,6 @@ use tokio::{
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
 
-const DEFAULT_ADDR: &str = "127.0.0.1:8761";
 const MAX_TIMEOUT_MS: u64 = 20 * 60 * 1_000;
 const MAX_BODY_BYTES: usize = 256 * 1024;
 const MAX_CELL_INVOCATIONS: u64 = 1_000_000;
@@ -611,7 +610,7 @@ mod tests {
 
     #[test]
     fn rejects_non_loopback_bind() {
-        assert!(parse_loopback_addr(DEFAULT_ADDR).is_ok());
+        assert!(parse_loopback_addr("127.0.0.1:8761").is_ok());
         assert!(parse_loopback_addr("0.0.0.0:8761").is_err());
     }
 
