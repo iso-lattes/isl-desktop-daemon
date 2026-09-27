@@ -173,7 +173,10 @@ fn load_config() -> Result<RuntimeConfig> {
     let argv = env::args().collect::<Vec<_>>();
     let parsed = parser.parse_structured(&argv, Some(config_path_text))?;
     if !parsed.unknown_options.is_empty() {
-        bail!("unknown command-line options: {}", parsed.unknown_options.len());
+        bail!(
+            "unknown command-line options: {}",
+            parsed.unknown_options.len()
+        );
     }
     if !parsed.errors.is_empty() {
         bail!("invalid command-line values: {}", parsed.errors.join("; "));
@@ -199,9 +202,7 @@ fn load_config() -> Result<RuntimeConfig> {
         .ok()
         .filter(|value| *value > 0 && *value <= MAX_CELL_INVOCATIONS)
         .ok_or_else(|| {
-            anyhow!(
-                "ISL_MAX_CELL_INVOCATIONS must be between 1 and {MAX_CELL_INVOCATIONS}"
-            )
+            anyhow!("ISL_MAX_CELL_INVOCATIONS must be between 1 and {MAX_CELL_INVOCATIONS}")
         })?;
     let token_path = match raw_config.ISL_DESKTOP_TOKEN_FILE {
         Some(path) if !path.trim().is_empty() => expand_home(Path::new(&path))?,
@@ -258,11 +259,7 @@ async fn list_cells(
     let mut statuses = Vec::with_capacity(cells.len());
     for (key, cell) in cells {
         let mut cell = cell.lock().await;
-        let running = cell
-            .child
-            .try_wait()
-            .map_err(internal_error)?
-            .is_none();
+        let running = cell.child.try_wait().map_err(internal_error)?.is_none();
         statuses.push(CellStatus {
             tenant_id: key.tenant_id,
             deployment_id: key.deployment_id,
@@ -432,8 +429,8 @@ async fn invoke_cell(
         bail!("worker cell closed its output");
     }
 
-    let response: Value = serde_json::from_str(response_line.trim())
-        .context("worker cell returned invalid JSON")?;
+    let response: Value =
+        serde_json::from_str(response_line.trim()).context("worker cell returned invalid JSON")?;
     if response.get("ok").and_then(Value::as_bool) != Some(true) {
         let message = response
             .get("error")
