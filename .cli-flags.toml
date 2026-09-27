@@ -1,0 +1,47 @@
+[help]
+url = "https://github.com/iso-lattes/isl-desktop-daemon"
+columns = ["options", "env", "type", "default", "description"]
+
+[parse]
+stop_at_first_positional = false
+allow_unknown = false
+
+[flags.listen]
+env = "ISL_DESKTOP_ADDR"
+aliases = ["listen"]
+type = "string"
+default = "127.0.0.1:8761"
+help = "Loopback listen address for the desktop daemon."
+
+[flags.worker]
+env = "ISL_WORKER_COMMAND"
+aliases = ["worker"]
+type = "string"
+default = "isl-v8-worker"
+help = "Allowlisted reusable V8-cell worker executable."
+
+[flags.artifact-root]
+env = "ISL_ARTIFACT_ROOT"
+aliases = ["artifact-root"]
+type = "string"
+help = "Root containing tenant/deployment worker.js artifacts."
+
+[flags.max-cell-invocations]
+env = "ISL_MAX_CELL_INVOCATIONS"
+aliases = ["max-cell-invocations"]
+type = "integer"
+default = 1000
+help = "Maximum successful invocations before retiring a reusable V8 cell."
+
+[flags.token-file]
+env = "ISL_DESKTOP_TOKEN_FILE"
+aliases = ["token-file"]
+type = "string"
+help = "Optional local bearer-token file path; token values are never argv."
+
+[flags.log]
+env = "ISL_DESKTOP_LOG"
+aliases = ["log"]
+type = "string"
+default = "isl_desktop_daemon=info"
+help = "Tracing filter for the desktop daemon."
