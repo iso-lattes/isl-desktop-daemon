@@ -21,14 +21,14 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: lunatic-lorry/ll-desktop-cli
-          ref: 697164a158535b537aa9fa82b16854a625b4d73a
+          ref: b16a7c1c87b074c9fb82d48cc95d289d0a9b2b0b
           persist-credentials: false
       - name: Install Rust 1.90
         shell: bash
         run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
       - name: Verify exact checkout
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "697164a158535b537aa9fa82b16854a625b4d73a"
+        run: test "$(git rev-parse HEAD)" = "b16a7c1c87b074c9fb82d48cc95d289d0a9b2b0b"
       - name: Format
         shell: bash
         run: cargo +1.90.0 fmt --all -- --check
