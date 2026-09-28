@@ -1,0 +1,56 @@
+name: certify GIW desktop CLI
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/giw-cli-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-head:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: cbf8b3681d50193059bbb600a85578557b9a889a
+    steps:
+      - name: Check out carrier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: carrier
+      - name: Check out exact GIW CLI source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: gha-indie-worker/giw-desktop-cli
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+          path: source
+      - name: Verify exact source revision
+        working-directory: source
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Install Rust 1.90
+        shell: bash
+        run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
+      - name: Generate lock candidate
+        working-directory: source
+        run: cargo +1.90.0 generate-lockfile
+      - name: Upload Cargo.lock
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: giw-cli-cargo-lock-${{ env.SOURCE_SHA }}
+          path: source/Cargo.lock
+          if-no-files-found: error
+          retention-days: 14
+      - name: Format
+        working-directory: source
+        run: cargo +1.90.0 fmt --all -- --check
+      - name: Clippy
+        working-directory: source
+        run: cargo +1.90.0 clippy --all-targets --locked -- -D warnings
+      - name: Test
+        working-directory: source
+        run: cargo +1.90.0 test --all-targets --locked
