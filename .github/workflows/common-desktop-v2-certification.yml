@@ -1,0 +1,162 @@
+name: certify common desktop platform v2
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/common-desktop-v2-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: certify-common-desktop-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-head:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOURCE_SHA: bf418c8e353752b9c7638872866a1134f12a2839
+      TJSV_SHA: 4a5d049218adc2740d4cf78f612caf7f38f6f64c
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Require governed cross-repository read credential
+        env:
+          FLEET_GITHUB_READ_TOKEN: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$FLEET_GITHUB_READ_TOKEN"
+          echo "protected source access enabled"
+
+      - name: Check out carrier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: carrier
+
+      - name: Check out exact common desktop source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ORESoftware/ores-common-desktop-infra
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
+          persist-credentials: false
+          path: source
+
+      - name: Verify exact source revision
+        working-directory: source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Generate canonical workspace lock candidate
+        working-directory: source
+        run: cargo generate-lockfile
+
+      - name: Upload generated Cargo.lock
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: common-desktop-v2-cargo-lock-${{ env.SOURCE_SHA }}
+          path: source/Cargo.lock
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Check Rust formatting
+        working-directory: source
+        run: cargo fmt --all -- --check
+
+      - name: Lint Rust workspace
+        working-directory: source
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings -A clippy::needless_return
+
+      - name: Test Rust workspace
+        working-directory: source
+        run: cargo test --workspace --all-targets --locked
+
+      - name: Run shared desktop conformance suite
+        working-directory: source
+        run: cargo test --locked -p ores-common-desktop-conformance
+
+      - name: Smoke-test shared desktop consumer checker
+        working-directory: source/tests/consumer-fixture
+        env:
+          ORES_COMMON_DESKTOP_EXPECTED_REVISION: 0123456789abcdef0123456789abcdef01234567
+        run: cargo run --locked --manifest-path ../../daemon/rust/Cargo.toml --bin ores-common-desktop-consumer-check
+
+      - name: Set up Node
+        uses: actions/setup-node@1e60f620b9541d7c243d3c14d4d6ec1e02ae9a0d
+        with:
+          node-version: 22.16.0
+
+      - name: Check out exact TJSV
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: ORESoftware/typespec-json-schema-validator
+          ref: ${{ env.TJSV_SHA }}
+          token: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
+          persist-credentials: false
+          path: tjsv
+
+      - name: Verify and install TJSV
+        run: |
+          set -euo pipefail
+          test "$(git -C tjsv rev-parse HEAD)" = "$TJSV_SHA"
+          npm ci --prefix tjsv --omit=dev
+
+      - name: Admit runtime-generation peer authorities
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime-generation/generated
+          node tjsv/bin/typespec-json-schema-validator.mjs check \
+            --typespec=source/runtime/contracts/runtime-generation.tsp \
+            --schema=source/runtime/contracts/runtime-generation.schema.json \
+            --instances=source/runtime/contracts/instances \
+            --int64-strategy=number \
+            --output-dir=evidence/runtime-generation/generated \
+            --contract-ir=evidence/runtime-generation/contract-ir.json \
+            --report=evidence/runtime-generation/peer-authority-report.json
+          node tjsv/bin/typespec-json-schema-validator.mjs verify-ir \
+            --contract-ir=evidence/runtime-generation/contract-ir.json \
+            --parity-receipt=evidence/runtime-generation/peer-authority-report.json \
+            --typespec=source/runtime/contracts/runtime-generation.tsp \
+            --generated-schema=evidence/runtime-generation/generated/typespec.generated.schema.json \
+            --schema=source/runtime/contracts/runtime-generation.schema.json \
+            --expected-declarations='["Ores.RuntimeGeneration.RuntimeEnvironment","Ores.RuntimeGeneration.HostMatchKind","Ores.RuntimeGeneration.PathMatchKind","Ores.RuntimeGeneration.MiddlewarePhase","Ores.RuntimeGeneration.RequestMatcher","Ores.RuntimeGeneration.HandlerSpec","Ores.RuntimeGeneration.MiddlewareSpec","Ores.RuntimeGeneration.RouteSpec","Ores.RuntimeGeneration.ContractSet","Ores.RuntimeGeneration.GenerationDigests","Ores.RuntimeGeneration.RuntimeGeneration","Ores.RuntimeGeneration.GenerationLease"]' \
+            --verification=evidence/runtime-generation/consumer-verification.json
+
+      - name: Admit runtime-activation peer authorities
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/runtime-activation/generated
+          node tjsv/bin/typespec-json-schema-validator.mjs check \
+            --typespec=source/runtime/contracts/runtime-activation.tsp \
+            --schema=source/runtime/contracts/runtime-activation.schema.json \
+            --instances=source/runtime/contracts/activation-instances \
+            --int64-strategy=number \
+            --output-dir=evidence/runtime-activation/generated \
+            --contract-ir=evidence/runtime-activation/contract-ir.json \
+            --report=evidence/runtime-activation/peer-authority-report.json
+          node tjsv/bin/typespec-json-schema-validator.mjs verify-ir \
+            --contract-ir=evidence/runtime-activation/contract-ir.json \
+            --parity-receipt=evidence/runtime-activation/peer-authority-report.json \
+            --typespec=source/runtime/contracts/runtime-activation.tsp \
+            --generated-schema=evidence/runtime-activation/generated/typespec.generated.schema.json \
+            --schema=source/runtime/contracts/runtime-activation.schema.json \
+            --expected-declarations='["Ores.RuntimeActivation.ActivationStage","Ores.RuntimeActivation.ActivationFailureCode","Ores.RuntimeActivation.ActiveGenerationIdentity","Ores.RuntimeActivation.ActivationIntent","Ores.RuntimeActivation.ActivationReceipt","Ores.RuntimeActivation.ActivationFailure"]' \
+            --verification=evidence/runtime-activation/consumer-verification.json
+
+      - name: Upload contract evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: common-desktop-v2-contract-evidence-${{ env.SOURCE_SHA }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 14
