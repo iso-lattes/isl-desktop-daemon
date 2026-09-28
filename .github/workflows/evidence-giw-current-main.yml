@@ -1,0 +1,51 @@
+name: evidence-giw-current-main
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/evidence-giw-current-main.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out exact GIW CLI head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: gha-indie-worker/giw-desktop-cli
+          ref: f2a66590e5f2d9a5a549de11b0f6b29d03f0fa53
+          persist-credentials: false
+      - name: Verify exact checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "f2a66590e5f2d9a5a549de11b0f6b29d03f0fa53"
+      - name: Install Rust 1.90
+        shell: bash
+        run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
+      - name: Generate deterministic lock candidate
+        shell: bash
+        run: cargo +1.90.0 generate-lockfile
+      - name: Format
+        shell: bash
+        run: cargo +1.90.0 fmt --all -- --check
+      - name: Clippy
+        shell: bash
+        run: cargo +1.90.0 clippy --all-targets --locked -- -D warnings
+      - name: Test
+        shell: bash
+        run: cargo +1.90.0 test --all-targets --locked
+      - name: Preserve lock candidate
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: giw-current-main-lock-f2a6659
+          path: Cargo.lock
+          if-no-files-found: error
+          retention-days: 14
