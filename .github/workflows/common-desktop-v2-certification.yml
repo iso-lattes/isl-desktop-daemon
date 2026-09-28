@@ -20,14 +20,13 @@ jobs:
     env:
       SOURCE_SHA: bf418c8e353752b9c7638872866a1134f12a2839
       TJSV_SHA: 4a5d049218adc2740d4cf78f612caf7f38f6f64c
+      CROSS_REPO_READ_TOKEN: ${{ secrets.FLEET_GITHUB_READ_TOKEN || secrets.TEST_FLEET_READ_TOKEN || secrets.ORES_CROSS_REPO_READ_TOKEN || secrets['cross-repo-token'] }}
       CARGO_TERM_COLOR: always
     steps:
       - name: Require governed cross-repository read credential
-        env:
-          FLEET_GITHUB_READ_TOKEN: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
         run: |
           set -euo pipefail
-          test -n "$FLEET_GITHUB_READ_TOKEN"
+          test -n "$CROSS_REPO_READ_TOKEN"
           echo "protected source access enabled"
 
       - name: Check out carrier
@@ -41,7 +40,7 @@ jobs:
         with:
           repository: ORESoftware/ores-common-desktop-infra
           ref: ${{ env.SOURCE_SHA }}
-          token: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
+          token: ${{ env.CROSS_REPO_READ_TOKEN }}
           persist-credentials: false
           path: source
 
@@ -100,7 +99,7 @@ jobs:
         with:
           repository: ORESoftware/typespec-json-schema-validator
           ref: ${{ env.TJSV_SHA }}
-          token: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
+          token: ${{ env.CROSS_REPO_READ_TOKEN }}
           persist-credentials: false
           path: tjsv
 
