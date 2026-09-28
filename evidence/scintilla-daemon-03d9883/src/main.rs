@@ -18,11 +18,11 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use tempfile::NamedTempFile;
 use tokio::{
     process::{Child, Command},
     sync::Mutex,
 };
-use tempfile::NamedTempFile;
 use uuid::Uuid;
 
 const DEFAULT_ADDR: &str = "127.0.0.1:8765";
@@ -269,7 +269,10 @@ async fn processes(
     headers: HeaderMap,
 ) -> Result<Json<Vec<ProcessView>>, (StatusCode, String)> {
     authorize(&headers, &state)?;
-    return process_views(&state).await.map(Json).map_err(internal_error);
+    return process_views(&state)
+        .await
+        .map(Json)
+        .map_err(internal_error);
 }
 
 async fn start_process(
@@ -512,7 +515,6 @@ fn authorize(headers: &HeaderMap, state: &AppState) -> Result<(), (StatusCode, S
     return Err((StatusCode::UNAUTHORIZED, "unauthorized".to_owned()));
 }
 
-
 fn idempotency_key(headers: &HeaderMap) -> Result<String, (StatusCode, String)> {
     let key = headers
         .get(IDEMPOTENCY_HEADER)
@@ -577,9 +579,9 @@ fn validate_name(value: &str) -> Result<(), (StatusCode, String)> {
 fn validate_name_result(value: &str) -> Result<()> {
     let valid = !value.is_empty()
         && value.len() <= 96
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.')
-        });
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'));
     if !valid {
         bail!("invalid process name");
     }
@@ -637,7 +639,8 @@ fn parse_loopback_addr(value: &str) -> Result<SocketAddr> {
 }
 
 fn require_loopback_url(value: &str) -> Result<()> {
-    let url = reqwest::Url::parse(value).context("SCINTILLA_LOCAL_INGRESS_URL must be a valid URL")?;
+    let url =
+        reqwest::Url::parse(value).context("SCINTILLA_LOCAL_INGRESS_URL must be a valid URL")?;
     if url.scheme() != "http"
         || !url.username().is_empty()
         || url.password().is_some()
@@ -792,7 +795,6 @@ fn load_or_create_token(path: &Path) -> Result<String> {
     }
 }
 
-
 fn replay_state_from_keys(keys: Vec<String>) -> Result<ReplayState> {
     if keys.len() > MAX_RECENT_IDEMPOTENCY_KEYS {
         bail!(
@@ -819,8 +821,9 @@ fn load_replay_state(path: &Path) -> Result<ReplayState> {
             return Ok(ReplayState::default());
         }
         Err(error) => {
-            return Err(error)
-                .with_context(|| format!("cannot inspect mutation replay file {}", path.display()));
+            return Err(error).with_context(|| {
+                format!("cannot inspect mutation replay file {}", path.display())
+            });
         }
     };
     if metadata.file_type().is_symlink() || !metadata.is_file() {
@@ -897,7 +900,12 @@ fn save_replay_state(path: &Path, state: &ReplayState) -> Result<()> {
     temp.as_file().sync_all()?;
     temp.persist(path)
         .map_err(|error| error.error)
-        .with_context(|| format!("cannot atomically persist mutation replay file {}", path.display()))?;
+        .with_context(|| {
+            format!(
+                "cannot atomically persist mutation replay file {}",
+                path.display()
+            )
+        })?;
     return Ok(());
 }
 
@@ -949,7 +957,9 @@ fn keep_awake_command() -> Result<(String, Vec<String>)> {
     }
     #[cfg(target_os = "windows")]
     {
-        return Err(anyhow!("keep-awake helper is not implemented on Windows yet"));
+        return Err(anyhow!(
+            "keep-awake helper is not implemented on Windows yet"
+        ));
     }
     #[allow(unreachable_code)]
     return Err(anyhow!("keep-awake helper is unsupported on this OS"));
@@ -1071,10 +1081,11 @@ mod tests {
         }
         assert_eq!(state.order.len(), MAX_RECENT_IDEMPOTENCY_KEYS);
         assert!(!state.keys.contains("mutation-00000000"));
-        assert!(state.keys.contains(&format!(
-            "mutation-{:08}",
-            MAX_RECENT_IDEMPOTENCY_KEYS
-        )));
+        assert!(
+            state
+                .keys
+                .contains(&format!("mutation-{:08}", MAX_RECENT_IDEMPOTENCY_KEYS))
+        );
         assert!(state.reserve("mutation-00000001".to_owned()).is_err());
     }
 
@@ -1118,8 +1129,7 @@ mod tests {
             .expect("encode replay"),
         )
         .expect("write replay");
-        fs::set_permissions(&target, fs::Permissions::from_mode(0o600))
-            .expect("chmod replay");
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o600)).expect("chmod replay");
         symlink(&target, &link).expect("symlink replay");
         assert!(load_replay_state(&link).is_err());
 
