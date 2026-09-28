@@ -598,8 +598,12 @@ fn read_existing_token(path: &Path) -> Result<Option<String>> {
         Ok(metadata) => metadata,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
         Err(error) => {
-            return Err(error)
-                .with_context(|| format!("cannot inspect desktop daemon token file {}", path.display()));
+            return Err(error).with_context(|| {
+                format!(
+                    "cannot inspect desktop daemon token file {}",
+                    path.display()
+                )
+            });
         }
     };
     validate_token_file_metadata(path, &metadata)?;
@@ -644,22 +648,31 @@ fn load_or_create_token(path: &Path) -> Result<String> {
     match options.open(path) {
         Ok(mut file) => {
             file.write_all(format!("{token}\n").as_bytes())
-                .with_context(|| format!("cannot write desktop daemon token file {}", path.display()))?;
-            file.sync_all()
-                .with_context(|| format!("cannot sync desktop daemon token file {}", path.display()))?;
+                .with_context(|| {
+                    format!("cannot write desktop daemon token file {}", path.display())
+                })?;
+            file.sync_all().with_context(|| {
+                format!("cannot sync desktop daemon token file {}", path.display())
+            })?;
         }
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-            return read_existing_token(path)?
-                .ok_or_else(|| anyhow!("desktop daemon token file appeared but could not be read"));
+            return read_existing_token(path)?.ok_or_else(|| {
+                anyhow!("desktop daemon token file appeared but could not be read")
+            });
         }
         Err(error) => {
-            return Err(error)
-                .with_context(|| format!("cannot create desktop daemon token file {}", path.display()));
+            return Err(error).with_context(|| {
+                format!("cannot create desktop daemon token file {}", path.display())
+            });
         }
     }
 
-    let metadata = std::fs::symlink_metadata(path)
-        .with_context(|| format!("cannot inspect new desktop daemon token file {}", path.display()))?;
+    let metadata = std::fs::symlink_metadata(path).with_context(|| {
+        format!(
+            "cannot inspect new desktop daemon token file {}",
+            path.display()
+        )
+    })?;
     validate_token_file_metadata(path, &metadata)?;
     return Ok(token);
 }
