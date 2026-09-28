@@ -1,4 +1,4 @@
-name: certify-scintilla-daemon-03d9883
+name: certify-scintilla-daemon-4a336e3
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: scintilla-daemon-03d9883-${{ github.ref }}
+  group: scintilla-daemon-4a336e3-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,8 +33,8 @@ jobs:
           test "$(git hash-object evidence/scintilla-daemon-03d9883/Cargo.toml)" = "56181422884abdd7fce98723e7d22359dea48e3c"
           test "$(git hash-object evidence/scintilla-daemon-03d9883/.cli-flags.toml)" = "dcd9263766503081766e001a21620b227a9a8042"
           test "$(git hash-object evidence/scintilla-daemon-03d9883/src/flags.rs)" = "83bef3d1c51b1c2c04fdeae7c12d0788a96b1c91"
-          test "$(git hash-object evidence/scintilla-daemon-03d9883/src/main.rs)" = "f4c15454810091b187d08307345a16b39da26229"
-          echo "certifying scintilla-run/scintilla-desktop-daemon@03d98831c75b0494a89fa35fbd6e51b588a455ca"
+          test "$(git hash-object evidence/scintilla-daemon-03d9883/src/main.rs)" = "f7ce368a4b017fb22cd0c96bf3a3f871ddc01f95"
+          echo "certifying scintilla-run/scintilla-desktop-daemon@4a336e3be2ad7ced338decccac3a02f44998baf1"
 
       - name: Install declared MSRV
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
