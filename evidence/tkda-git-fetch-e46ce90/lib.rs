@@ -92,7 +92,7 @@ impl FetchPolicy {
         validate_ref(&request.requested_ref)?;
         validate_commit_oid(&request.resolved_commit_oid)?;
         let remote_host = validate_remote(&request.repository_url, self.allow_ssh)?;
-        validate_resolved_remote_ips(remote_host, &request.resolved_remote_ips)?;
+        validate_resolved_remote_ips(&remote_host, &request.resolved_remote_ips)?;
 
         return Ok(GitFetchPlan {
             repository_url: request.repository_url.clone(),
@@ -200,7 +200,7 @@ fn validate_ip(address: IpAddr) -> Result<(), FetchPolicyError> {
 }
 
 fn validate_resolved_remote_ips(
-    host: Host<String>,
+    host: &Host<String>,
     addresses: &[IpAddr],
 ) -> Result<(), FetchPolicyError> {
     if addresses.is_empty() || addresses.len() > 16 {
@@ -211,14 +211,14 @@ fn validate_resolved_remote_ips(
     }
 
     let literal = match host {
-        Host::Ipv4(address) => Some(IpAddr::V4(address)),
-        Host::Ipv6(address) => Some(IpAddr::V6(address)),
+        Host::Ipv4(address) => Some(IpAddr::V4(*address)),
+        Host::Ipv6(address) => Some(IpAddr::V6(*address)),
         Host::Domain(_) => None,
     };
-    if let Some(literal) = literal {
-        if addresses != [literal] {
-            return Err(FetchPolicyError::ResolutionMismatch);
-        }
+    if let Some(literal) = literal
+        && addresses != [literal]
+    {
+        return Err(FetchPolicyError::ResolutionMismatch);
     }
     return Ok(());
 }
