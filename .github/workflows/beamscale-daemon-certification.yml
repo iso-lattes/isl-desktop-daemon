@@ -1,0 +1,61 @@
+name: certify BeamScale desktop daemon
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/beamscale-daemon-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-head:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: 99d3f2eed0a0d033f1c79a9a22873de929626f90
+    steps:
+      - name: Check out carrier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: carrier
+      - name: Check out exact public BeamScale source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: beamscale/beamscale-desktop-daemon
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+          path: source
+      - name: Verify exact source revision
+        working-directory: source
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Install declared MSRV
+        shell: bash
+        run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
+      - name: Generate lock candidate
+        working-directory: source
+        run: cargo +1.90.0 generate-lockfile
+      - name: Upload Cargo.lock
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: beamscale-daemon-cargo-lock-${{ env.SOURCE_SHA }}
+          path: source/Cargo.lock
+          if-no-files-found: error
+          retention-days: 14
+      - name: Format
+        working-directory: source
+        run: cargo +1.90.0 fmt --all -- --check
+      - name: Clippy
+        working-directory: source
+        run: cargo +1.90.0 clippy --all-targets --locked -- -D warnings
+      - name: Test
+        working-directory: source
+        run: cargo +1.90.0 test --all-targets --locked
