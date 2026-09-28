@@ -1,4 +1,4 @@
-name: certify-takoda-git-fetch-e46ce90
+name: certify-takoda-git-fetch-80241be
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: certify-takoda-git-fetch-e46ce90-${{ github.ref }}
+  group: certify-takoda-git-fetch-80241be-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,8 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git hash-object evidence/tkda-git-fetch-e46ce90/Cargo.toml)" = "f9813209556c0cad03518f55f33463f4f36b1fd3"
-          test "$(git hash-object evidence/tkda-git-fetch-e46ce90/lib.rs)" = "5639a0d37322e274a8acd75fb5298de06389d882"
-          echo "certifying takoda-automation/tkda-sync@e46ce9009298984c1b1516ca07426cc99329e67c"
+          test "$(git hash-object evidence/tkda-git-fetch-e46ce90/lib.rs)" = "ce91cb62ca3707670f2de75625dc5f67de14d58e"
+          echo "certifying takoda-automation/tkda-sync@80241be6b0cd5fbf27d8501bc66a9f8a85fe6e79"
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
           components: rustfmt, clippy
