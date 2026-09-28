@@ -1,0 +1,27 @@
+[package]
+name = "scintilla-desktop-daemon"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "MIT"
+description = "Machine-local Scintilla control plane"
+repository = "https://github.com/scintilla-run/scintilla-desktop-daemon"
+
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+needless_return = "allow"
+
+[dependencies]
+anyhow = "1"
+axum = { version = "0.8", features = ["json", "macros"] }
+flags2env = { git = "https://github.com/ORESoftware/flags-2-env.git", rev = "5a44d6a38f06c2765e80676618fd72bf4e59b984" }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1", features = ["v4"] }
