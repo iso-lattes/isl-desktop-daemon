@@ -25,13 +25,14 @@ jobs:
         with:
           persist-credentials: false
           path: carrier
-      - name: Check out exact public BeamScale source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: beamscale/beamscale-desktop-daemon
-          ref: ${{ env.SOURCE_SHA }}
-          persist-credentials: false
-          path: source
+      - name: Fetch exact public BeamScale source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init source
+          git -C source remote add origin https://github.com/beamscale/beamscale-desktop-daemon.git
+          git -C source -c protocol.version=2 fetch --depth=1 origin "$SOURCE_SHA"
+          git -C source checkout --detach FETCH_HEAD
       - name: Verify exact source revision
         working-directory: source
         shell: bash
