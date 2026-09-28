@@ -1,0 +1,92 @@
+[help]
+url = "https://github.com/scintilla-run/scintilla-desktop-daemon"
+columns = ["options", "env", "type", "default", "description"]
+
+[parse]
+stop_at_first_positional = false
+allow_unknown = false
+
+[env]
+ignore = ["SCINTILLA_LOCAL_INGRESS_TOKEN"]
+
+[flags.listen]
+env = "SCINTILLA_DESKTOP_ADDR"
+aliases = ["listen"]
+type = "string"
+default = "127.0.0.1:8765"
+help = "Loopback address for the machine-local daemon."
+
+[flags.token-file]
+env = "SCINTILLA_DESKTOP_TOKEN_FILE"
+aliases = ["token-file"]
+type = "string"
+help = "Path to the local daemon bearer-token file; the token itself is never argv."
+
+[flags.ingress-url]
+env = "SCINTILLA_LOCAL_INGRESS_URL"
+aliases = ["ingress-url"]
+type = "string"
+default = "http://127.0.0.1:8091"
+help = "Credential-free literal-loopback origin for the local Scintilla ingress."
+
+[flags.allow-arbitrary-client-commands]
+env = "SCINTILLA_ALLOW_ARBITRARY_CLIENT_COMMANDS"
+aliases = ["allow-arbitrary-client-commands"]
+type = "bool"
+default = false
+help = "Development-only escape hatch permitting authenticated clients to start arbitrary local processes. Disabled by default."
+
+[flags.start-erlang-ingress]
+env = "SCINTILLA_START_ERLANG_INGRESS"
+aliases = ["start-erlang-ingress"]
+type = "bool"
+default = false
+help = "Start the configured Erlang ingress/control process when the daemon boots."
+
+[flags.erlang-command]
+env = "SCINTILLA_ERLANG_COMMAND"
+aliases = ["erlang-command"]
+type = "string"
+default = "erl"
+help = "Trusted Erlang executable used only by the daemon-owned ingress lifecycle."
+
+[flags.erlang-args-json]
+env = "SCINTILLA_ERLANG_ARGS_JSON"
+aliases = ["erlang-args-json"]
+type = "string"
+default = "[]"
+help = "JSON string array of arguments for the trusted Erlang ingress process."
+
+[flags.cloudflared-command]
+env = "SCINTILLA_CLOUDFLARED_COMMAND"
+aliases = ["cloudflared-command"]
+type = "string"
+default = "cloudflared"
+help = "Trusted cloudflared executable used by the daemon-owned tunnel lifecycle."
+
+[flags.cloudflared-args-json]
+env = "SCINTILLA_CLOUDFLARED_ARGS_JSON"
+aliases = ["cloudflared-args-json"]
+type = "string"
+default = "[]"
+help = "JSON string array of arguments for cloudflared. Credentials remain in cloudflared's own store."
+
+[flags.update-command]
+env = "SCINTILLA_UPDATE_COMMAND"
+aliases = ["update-command"]
+type = "string"
+help = "Optional trusted update executable; omitted means the update endpoint is disabled."
+
+[flags.update-args-json]
+env = "SCINTILLA_UPDATE_ARGS_JSON"
+aliases = ["update-args-json"]
+type = "string"
+default = "[]"
+help = "JSON string array of arguments for the trusted update executable."
+
+[flags.log]
+env = "RUST_LOG"
+aliases = ["log"]
+type = "string"
+default = "scintilla_desktop_daemon=info"
+help = "Tracing filter for the desktop daemon."
