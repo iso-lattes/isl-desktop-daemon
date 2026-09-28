@@ -21,11 +21,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: gha-indie-worker/giw-desktop-cli
-          ref: f2a66590e5f2d9a5a549de11b0f6b29d03f0fa53
+          ref: 19c8b38ca8bdcdaf111c765da158f899b04019b8
           persist-credentials: false
       - name: Verify exact checkout
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "f2a66590e5f2d9a5a549de11b0f6b29d03f0fa53"
+        run: test "$(git rev-parse HEAD)" = "19c8b38ca8bdcdaf111c765da158f899b04019b8"
       - name: Install Rust 1.90
         shell: bash
         run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
@@ -45,7 +45,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: giw-current-main-lock-f2a6659
+          name: giw-current-main-lock-19c8b38
           path: Cargo.lock
           if-no-files-found: error
           retention-days: 14
