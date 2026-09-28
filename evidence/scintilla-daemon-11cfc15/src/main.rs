@@ -222,7 +222,10 @@ async fn processes(
     headers: HeaderMap,
 ) -> Result<Json<Vec<ProcessView>>, (StatusCode, String)> {
     authorize(&headers, &state)?;
-    return process_views(&state).await.map(Json).map_err(internal_error);
+    return process_views(&state)
+        .await
+        .map(Json)
+        .map_err(internal_error);
 }
 
 async fn start_process(
@@ -474,9 +477,9 @@ fn validate_name(value: &str) -> Result<(), (StatusCode, String)> {
 fn validate_name_result(value: &str) -> Result<()> {
     let valid = !value.is_empty()
         && value.len() <= 96
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.')
-        });
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'));
     if !valid {
         bail!("invalid process name");
     }
@@ -534,7 +537,8 @@ fn parse_loopback_addr(value: &str) -> Result<SocketAddr> {
 }
 
 fn require_loopback_url(value: &str) -> Result<()> {
-    let url = reqwest::Url::parse(value).context("SCINTILLA_LOCAL_INGRESS_URL must be a valid URL")?;
+    let url =
+        reqwest::Url::parse(value).context("SCINTILLA_LOCAL_INGRESS_URL must be a valid URL")?;
     if url.scheme() != "http"
         || !url.username().is_empty()
         || url.password().is_some()
@@ -737,7 +741,9 @@ fn keep_awake_command() -> Result<(String, Vec<String>)> {
     }
     #[cfg(target_os = "windows")]
     {
-        return Err(anyhow!("keep-awake helper is not implemented on Windows yet"));
+        return Err(anyhow!(
+            "keep-awake helper is not implemented on Windows yet"
+        ));
     }
     #[allow(unreachable_code)]
     return Err(anyhow!("keep-awake helper is unsupported on this OS"));
