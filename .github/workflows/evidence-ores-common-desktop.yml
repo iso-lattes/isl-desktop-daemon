@@ -1,0 +1,103 @@
+name: evidence-ores-common-desktop
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/evidence-ores-common-desktop.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_REPO: ORESoftware/ores-common-desktop-infra
+  SOURCE_SHA: 3fda402f724fc7e846d962645747cfd9d0cc21fc
+  FLUTTER_VERSION: "3.47.5"
+
+jobs:
+  rust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings -A clippy::needless_return
+      - run: cargo test --workspace --all-targets --locked
+      - run: cargo test --locked -p ores-common-desktop-conformance
+      - env:
+          ORES_COMMON_DESKTOP_EXPECTED_REVISION: 0123456789abcdef0123456789abcdef01234567
+        working-directory: tests/consumer-fixture
+        run: cargo run --locked --manifest-path ../../daemon/rust/Cargo.toml --bin ores-common-desktop-consumer-check
+
+  erlang:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [infra, cli, daemon]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
+        with:
+          otp-version: "27.3"
+          rebar3-version: "3.24.0"
+      - working-directory: ${{ matrix.component }}/erlang
+        run: rebar3 compile
+      - working-directory: ${{ matrix.component }}/erlang
+        run: rebar3 xref
+      - working-directory: ${{ matrix.component }}/erlang
+        run: rebar3 eunit
+
+  terraform:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [infra, cli, daemon]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+      - run: terraform fmt -check -recursive ${{ matrix.component }}/terraform
+      - run: terraform -chdir=${{ matrix.component }}/terraform init -backend=false
+      - run: terraform -chdir=${{ matrix.component }}/terraform validate
+
+  flutter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - working-directory: flutter
+        run: flutter pub get
+      - working-directory: flutter
+        run: dart format --output=none --set-exit-if-changed lib test
+      - working-directory: flutter
+        run: flutter analyze
+      - working-directory: flutter
+        run: flutter test
