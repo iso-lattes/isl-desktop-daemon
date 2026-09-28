@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      SOURCE_SHA: bf418c8e353752b9c7638872866a1134f12a2839
+      SOURCE_SHA: fa3b0f1b8260d368179d7077020a9f12c1382d8c
       TJSV_SHA: 4a5d049218adc2740d4cf78f612caf7f38f6f64c
       CROSS_REPO_READ_TOKEN: ${{ secrets.FLEET_GITHUB_READ_TOKEN || secrets.TEST_FLEET_READ_TOKEN || secrets.ORES_CROSS_REPO_READ_TOKEN || secrets['cross-repo-token'] }}
       CARGO_TERM_COLOR: always
