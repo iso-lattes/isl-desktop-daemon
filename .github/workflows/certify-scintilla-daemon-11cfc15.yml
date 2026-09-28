@@ -1,0 +1,64 @@
+name: certify-scintilla-daemon-11cfc15
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scintilla-daemon-11cfc15-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out carrier exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Verify mirrored Scintilla source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/Cargo.toml)" = "56181422884abdd7fce98723e7d22359dea48e3c"
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/.cli-flags.toml)" = "3643ccfe897e925285ddeaba897f15408cf564b3"
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/flags.rs)" = "1e8d034b7d55bf82df74c0d1df01d0992c6d404d"
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/main.rs)" = "521e904ec0cd5573219bd8e22576b5dd42bfe3b7"
+          echo "certifying scintilla-run/scintilla-desktop-daemon@11cfc15c6a4112e81c226784ea10997216b0977d"
+
+      - name: Install declared MSRV
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
+        with:
+          toolchain: "1.90.0"
+          components: rustfmt, clippy
+
+      - name: Generate deterministic lock candidate
+        shell: bash
+        run: cargo +1.90.0 generate-lockfile --manifest-path evidence/scintilla-daemon-11cfc15/Cargo.toml
+
+      - name: Publish lock candidate
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: scintilla-daemon-11cfc15-cargo-lock
+          path: evidence/scintilla-daemon-11cfc15/Cargo.lock
+          if-no-files-found: error
+
+      - name: Format
+        run: cargo +1.90.0 fmt --manifest-path evidence/scintilla-daemon-11cfc15/Cargo.toml -- --check
+
+      - name: Clippy
+        run: cargo +1.90.0 clippy --locked --manifest-path evidence/scintilla-daemon-11cfc15/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo +1.90.0 test --locked --manifest-path evidence/scintilla-daemon-11cfc15/Cargo.toml --all-targets
