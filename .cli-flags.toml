@@ -33,6 +33,13 @@ type = "integer"
 default = 1000
 help = "Maximum successful invocations before retiring a reusable V8 cell."
 
+[flags.max-live-cells]
+env = "ISL_MAX_LIVE_CELLS"
+aliases = ["max-live-cells"]
+type = "integer"
+default = 128
+help = "Maximum simultaneously resident tenant+deployment V8 cells. Capacity is reserved before spawn to prevent cold-start races."
+
 [flags.token-file]
 env = "ISL_DESKTOP_TOKEN_FILE"
 aliases = ["token-file"]
