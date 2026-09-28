@@ -855,16 +855,24 @@ fn load_replay_state(path: &Path) -> Result<ReplayState> {
 }
 
 fn save_replay_state(path: &Path, state: &ReplayState) -> Result<()> {
-    if let Ok(metadata) = fs::symlink_metadata(path) {
-        if metadata.file_type().is_symlink() || !metadata.is_file() {
-            bail!("mutation replay path must be a regular non-symlink file");
-        }
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            if metadata.permissions().mode() & 0o077 != 0 {
-                bail!("mutation replay file must not be accessible by group/other users");
+    match fs::symlink_metadata(path) {
+        Ok(metadata) => {
+            if metadata.file_type().is_symlink() || !metadata.is_file() {
+                bail!("mutation replay path must be a regular non-symlink file");
             }
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                if metadata.permissions().mode() & 0o077 != 0 {
+                    bail!("mutation replay file must not be accessible by group/other users");
+                }
+            }
+        }
+        Err(error) if error.kind() == ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(error).with_context(|| {
+                format!("cannot inspect mutation replay file {}", path.display())
+            });
         }
     }
 
