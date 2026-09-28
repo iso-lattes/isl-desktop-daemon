@@ -20,35 +20,23 @@ jobs:
     env:
       SOURCE_SHA: fa3b0f1b8260d368179d7077020a9f12c1382d8c
       TJSV_SHA: 4a5d049218adc2740d4cf78f612caf7f38f6f64c
-      CROSS_REPO_READ_TOKEN: ${{ secrets.FLEET_GITHUB_READ_TOKEN || secrets.TEST_FLEET_READ_TOKEN || secrets.ORES_CROSS_REPO_READ_TOKEN || secrets['cross-repo-token'] }}
+      GH_TOKEN: ${{ github.token }}
       CARGO_TERM_COLOR: always
     steps:
-      - name: Require governed cross-repository read credential
-        run: |
-          set -euo pipefail
-          test -n "$CROSS_REPO_READ_TOKEN"
-          echo "protected source access enabled"
-
       - name: Check out carrier
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
           path: carrier
 
-      - name: Check out exact common desktop source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: ORESoftware/ores-common-desktop-infra
-          ref: ${{ env.SOURCE_SHA }}
-          token: ${{ env.CROSS_REPO_READ_TOKEN }}
-          persist-credentials: false
-          path: source
-
-      - name: Verify exact source revision
-        working-directory: source
+      - name: Check out exact public common desktop source
+        shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          gh repo clone ORESoftware/ores-common-desktop-infra source -- --no-checkout --filter=blob:none
+          git -C source fetch --no-tags --depth=1 origin "$SOURCE_SHA"
+          git -C source checkout -q --detach "$SOURCE_SHA"
+          test "$(git -C source rev-parse HEAD)" = "$SOURCE_SHA"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -94,20 +82,17 @@ jobs:
         with:
           node-version: 22.16.0
 
-      - name: Check out exact TJSV
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: ORESoftware/typespec-json-schema-validator
-          ref: ${{ env.TJSV_SHA }}
-          token: ${{ env.CROSS_REPO_READ_TOKEN }}
-          persist-credentials: false
-          path: tjsv
-
-      - name: Verify and install TJSV
+      - name: Check out exact public TJSV
+        shell: bash
         run: |
           set -euo pipefail
+          gh repo clone ORESoftware/typespec-json-schema-validator tjsv -- --no-checkout --filter=blob:none
+          git -C tjsv fetch --no-tags --depth=1 origin "$TJSV_SHA"
+          git -C tjsv checkout -q --detach "$TJSV_SHA"
           test "$(git -C tjsv rev-parse HEAD)" = "$TJSV_SHA"
-          npm ci --prefix tjsv --omit=dev
+
+      - name: Install TJSV
+        run: npm ci --prefix tjsv --omit=dev
 
       - name: Admit runtime-generation peer authorities
         run: |
