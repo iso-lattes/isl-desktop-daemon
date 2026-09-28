@@ -1,0 +1,40 @@
+name: evidence-lunatic-cli-receipt
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/evidence-lunatic-cli-receipt.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out exact Lunatic CLI head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: lunatic-lorry/ll-desktop-cli
+          ref: 2995484dbc371cb8c227b758215d3f52a35ba141
+          persist-credentials: false
+      - name: Install declared Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
+      - name: Verify exact checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "2995484dbc371cb8c227b758215d3f52a35ba141"
+      - name: Format
+        shell: bash
+        run: cargo +1.90.0 fmt --all -- --check
+      - name: Clippy
+        shell: bash
+        run: cargo +1.90.0 clippy --all-targets -- -D warnings
+      - name: Test
+        shell: bash
+        run: cargo +1.90.0 test --all-targets
