@@ -25,12 +25,11 @@ jobs:
         with:
           persist-credentials: false
           path: carrier
-      - name: Check out exact private Scintilla source
+      - name: Check out exact Scintilla source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: scintilla-run/scintilla-desktop-daemon
           ref: ${{ env.SOURCE_SHA }}
-          token: ${{ secrets.FLEET_GITHUB_READ_TOKEN }}
           persist-credentials: false
           path: source
       - name: Verify exact source revision
