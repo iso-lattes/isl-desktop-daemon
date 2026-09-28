@@ -21,11 +21,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: gha-indie-worker/giw-desktop-cli
-          ref: 91f75aab9e2c75d6d370aabb3f33462b57106d03
+          ref: b8876a142a240a84ea0dc7c0d37ea89c89680f64
           persist-credentials: false
       - name: Verify exact checkout
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "91f75aab9e2c75d6d370aabb3f33462b57106d03"
+        run: test "$(git rev-parse HEAD)" = "b8876a142a240a84ea0dc7c0d37ea89c89680f64"
       - name: Install Rust 1.90
         shell: bash
         run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
