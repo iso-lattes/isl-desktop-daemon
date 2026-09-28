@@ -35,17 +35,22 @@ jobs:
       - name: Install Rust 1.90
         shell: bash
         run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
-      - name: Generate lock candidate
+      - name: Generate deterministic lock candidate
         working-directory: source
         run: cargo +1.90.0 generate-lockfile
-      - name: Upload Cargo.lock
+      - name: Apply canonical rustfmt
+        working-directory: source
+        run: cargo +1.90.0 fmt --all
+      - name: Preserve formatted source and lock candidate
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: giw-cli-cargo-lock-${{ env.SOURCE_SHA }}
-          path: source/Cargo.lock
+          name: giw-cli-formatted-${{ env.SOURCE_SHA }}
+          path: |
+            source/src/main.rs
+            source/Cargo.lock
           if-no-files-found: error
           retention-days: 14
-      - name: Format
+      - name: Verify formatting is stable
         working-directory: source
         run: cargo +1.90.0 fmt --all -- --check
       - name: Clippy
