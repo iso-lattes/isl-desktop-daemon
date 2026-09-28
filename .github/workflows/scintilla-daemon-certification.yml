@@ -1,0 +1,62 @@
+name: certify Scintilla desktop daemon
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/scintilla-daemon-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-head:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      SOURCE_SHA: 7f7be04b2782e8756225809d3b67cd7521ececb0
+    steps:
+      - name: Check out carrier
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          path: carrier
+      - name: Fetch exact public Scintilla source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init source
+          git -C source remote add origin https://github.com/scintilla-run/scintilla-desktop-daemon.git
+          git -C source -c protocol.version=2 fetch --depth=1 origin "$SOURCE_SHA"
+          git -C source checkout --detach FETCH_HEAD
+      - name: Verify exact source revision
+        working-directory: source
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Install Rust 1.90
+        shell: bash
+        run: rustup toolchain install 1.90.0 --profile minimal --component rustfmt,clippy
+      - name: Generate lock candidate
+        working-directory: source
+        run: cargo +1.90.0 generate-lockfile
+      - name: Upload Cargo.lock
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scintilla-daemon-cargo-lock-${{ env.SOURCE_SHA }}
+          path: source/Cargo.lock
+          if-no-files-found: error
+          retention-days: 14
+      - name: Format
+        working-directory: source
+        run: cargo +1.90.0 fmt --all -- --check
+      - name: Clippy
+        working-directory: source
+        run: cargo +1.90.0 clippy --all-targets --locked -- -D warnings
+      - name: Test
+        working-directory: source
+        run: cargo +1.90.0 test --all-targets --locked
