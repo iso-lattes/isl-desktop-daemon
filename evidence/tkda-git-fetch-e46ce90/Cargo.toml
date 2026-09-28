@@ -1,0 +1,23 @@
+[package]
+name = "tkda-git-fetch-policy"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Fail-closed policy for materializing untrusted Takoda Git sources"
+publish = false
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+thiserror = "2"
+url = "2"
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+needless_return = "allow"
