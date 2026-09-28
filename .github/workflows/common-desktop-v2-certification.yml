@@ -91,7 +91,7 @@ jobs:
         run: cargo run --locked --manifest-path ../../daemon/rust/Cargo.toml --bin ores-common-desktop-consumer-check
 
       - name: Set up Node
-        uses: actions/setup-node@1e60f620b9541d7c243d3c14d4d6ec1e02ae9a0d
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22.16.0
 
