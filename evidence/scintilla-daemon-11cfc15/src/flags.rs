@@ -81,10 +81,7 @@ mod tests {
     #[test]
     fn legacy_arbitrary_process_environment_is_removed() {
         let env = EnvMap::from([
-            (
-                DISABLED_ARBITRARY_COMMAND_ENV.to_owned(),
-                "true".to_owned(),
-            ),
+            (DISABLED_ARBITRARY_COMMAND_ENV.to_owned(), "true".to_owned()),
             ("RUST_LOG".to_owned(), "info".to_owned()),
         ]);
         let env = sanitize_env(env);
