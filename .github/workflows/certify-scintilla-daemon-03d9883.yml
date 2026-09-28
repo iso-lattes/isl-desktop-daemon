@@ -1,0 +1,56 @@
+name: certify-scintilla-daemon-03d9883
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scintilla-daemon-03d9883-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out carrier exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Verify mirrored Scintilla source blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object evidence/scintilla-daemon-03d9883/Cargo.toml)" = "56181422884abdd7fce98723e7d22359dea48e3c"
+          test "$(git hash-object evidence/scintilla-daemon-03d9883/.cli-flags.toml)" = "dcd9263766503081766e001a21620b227a9a8042"
+          test "$(git hash-object evidence/scintilla-daemon-03d9883/src/flags.rs)" = "83bef3d1c51b1c2c04fdeae7c12d0788a96b1c91"
+          test "$(git hash-object evidence/scintilla-daemon-03d9883/src/main.rs)" = "f4c15454810091b187d08307345a16b39da26229"
+          echo "certifying scintilla-run/scintilla-desktop-daemon@03d98831c75b0494a89fa35fbd6e51b588a455ca"
+
+      - name: Install declared MSRV
+        uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
+        with:
+          toolchain: "1.90.0"
+          components: rustfmt, clippy
+
+      - name: Generate deterministic lock candidate
+        shell: bash
+        run: cargo +1.90.0 generate-lockfile --manifest-path evidence/scintilla-daemon-03d9883/Cargo.toml
+
+      - name: Format
+        run: cargo +1.90.0 fmt --manifest-path evidence/scintilla-daemon-03d9883/Cargo.toml -- --check
+
+      - name: Clippy
+        run: cargo +1.90.0 clippy --locked --manifest-path evidence/scintilla-daemon-03d9883/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo +1.90.0 test --locked --manifest-path evidence/scintilla-daemon-03d9883/Cargo.toml --all-targets
