@@ -1,4 +1,4 @@
-name: certify-scintilla-daemon-11cfc15
+name: certify-scintilla-daemon-e7a34a3
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: scintilla-daemon-11cfc15-${{ github.ref }}
+  group: scintilla-daemon-e7a34a3-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -32,9 +32,9 @@ jobs:
           set -euo pipefail
           test "$(git hash-object evidence/scintilla-daemon-11cfc15/Cargo.toml)" = "56181422884abdd7fce98723e7d22359dea48e3c"
           test "$(git hash-object evidence/scintilla-daemon-11cfc15/.cli-flags.toml)" = "3643ccfe897e925285ddeaba897f15408cf564b3"
-          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/flags.rs)" = "1e8d034b7d55bf82df74c0d1df01d0992c6d404d"
-          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/main.rs)" = "521e904ec0cd5573219bd8e22576b5dd42bfe3b7"
-          echo "certifying scintilla-run/scintilla-desktop-daemon@11cfc15c6a4112e81c226784ea10997216b0977d"
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/flags.rs)" = "844faf2c93adcd3ed9083e578126904d2d316f4b"
+          test "$(git hash-object evidence/scintilla-daemon-11cfc15/src/main.rs)" = "df69de78b7ece7083ead3f014d20070a1fdfdef2"
+          echo "certifying scintilla-run/scintilla-desktop-daemon@e7a34a31066bd387550eae434ea729f46856923e"
 
       - name: Install declared MSRV
         uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
@@ -50,7 +50,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: scintilla-daemon-11cfc15-cargo-lock
+          name: scintilla-daemon-e7a34a3-cargo-lock
           path: evidence/scintilla-daemon-11cfc15/Cargo.lock
           if-no-files-found: error
 
