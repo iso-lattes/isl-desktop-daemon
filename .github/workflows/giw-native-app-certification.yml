@@ -22,11 +22,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: gha-indie-worker/gha-indie-worker-desktop-app.rs
-          ref: d189e4375e5fd91eaf237c9fafdf63aada71806c
+          ref: 788de113187a2cadeede03c1eebb1549f29635c4
           persist-credentials: false
       - name: Verify exact source revision
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "d189e4375e5fd91eaf237c9fafdf63aada71806c"
+        run: test "$(git rev-parse HEAD)" = "788de113187a2cadeede03c1eebb1549f29635c4"
       - name: Install Linux UI build dependencies
         if: runner.os == 'Linux'
         shell: bash
@@ -38,9 +38,9 @@ jobs:
         with:
           toolchain: "1.90.0"
           components: rustfmt,clippy
-      - name: Generate deterministic lock candidate
+      - name: Fetch committed lockfile exactly
         shell: bash
-        run: cargo +1.90.0 generate-lockfile
+        run: cargo +1.90.0 fetch --locked
       - name: Format
         shell: bash
         run: cargo +1.90.0 fmt --all -- --check
@@ -53,11 +53,8 @@ jobs:
       - name: Test
         shell: bash
         run: cargo +1.90.0 test --locked --all-targets
-      - name: Preserve lock candidate
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: giw-native-app-lock-d189e437
-          path: Cargo.lock
-          if-no-files-found: error
-          retention-days: 14
+      - name: Require deterministic committed lockfile
+        shell: bash
+        run: |
+          git ls-files --error-unmatch Cargo.lock >/dev/null
+          git diff --exit-code -- Cargo.lock
