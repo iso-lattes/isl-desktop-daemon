@@ -85,7 +85,9 @@ jobs:
           '''
           path.write_text(text)
           PY
-      - name: Format
+      - name: Format source
+        run: cargo +1.90.0 fmt --all
+      - name: Verify formatting
         run: cargo +1.90.0 fmt --all -- --check
       - name: Clippy
         run: cargo +1.90.0 clippy --locked --all-targets -- -D warnings
