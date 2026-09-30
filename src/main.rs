@@ -35,6 +35,7 @@ const MAX_BODY_BYTES: usize = 256 * 1024;
 const MAX_CELL_INVOCATIONS: u64 = 1_000_000;
 const MAX_LIVE_CELLS: usize = 4096;
 const MAX_WORKER_RESPONSE_BYTES: usize = 4 * 1024 * 1024;
+const MAX_WORKER_ARTIFACT_BYTES: u64 = 64 * 1024 * 1024;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
@@ -563,6 +564,14 @@ fn require_regular_file(path: &Path, description: &str) -> Result<()> {
     if metadata.file_type().is_symlink() || !metadata.is_file() {
         bail!("{description} must be a regular non-symlink file");
     }
+    validate_artifact_size(description, metadata.len(), MAX_WORKER_ARTIFACT_BYTES)?;
+    return Ok(());
+}
+
+fn validate_artifact_size(description: &str, bytes: u64, max_bytes: u64) -> Result<()> {
+    if bytes == 0 || bytes > max_bytes {
+        bail!("{description} size must be between 1 and {max_bytes} bytes");
+    }
     return Ok(());
 }
 
@@ -849,6 +858,28 @@ mod tests {
             .map(|path| path.ends_with("tenant-a/deploy-123/worker.js"))
             .unwrap_or(false);
         assert!(valid);
+    }
+
+    #[test]
+    fn worker_artifact_size_is_bounded() {
+        assert!(validate_artifact_size("worker", 1, MAX_WORKER_ARTIFACT_BYTES).is_ok());
+        assert!(
+            validate_artifact_size(
+                "worker",
+                MAX_WORKER_ARTIFACT_BYTES,
+                MAX_WORKER_ARTIFACT_BYTES
+            )
+            .is_ok()
+        );
+        assert!(validate_artifact_size("worker", 0, MAX_WORKER_ARTIFACT_BYTES).is_err());
+        assert!(
+            validate_artifact_size(
+                "worker",
+                MAX_WORKER_ARTIFACT_BYTES + 1,
+                MAX_WORKER_ARTIFACT_BYTES
+            )
+            .is_err()
+        );
     }
 
     #[tokio::test]
