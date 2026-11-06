@@ -1,0 +1,28 @@
+// Pure source-level AttoLang reference for desktop daemon admission.
+// Production Rust continues to validate path bytes, socket addresses and
+// bearer tokens. This is not compiled guest or security-boundary evidence.
+define module daemon_admission as
+  pub fnc path_component(bool nonempty, bool bounded_length,
+                         bool portable_ascii, bool dot_segment,
+                         bool parent_segment): bool {
+    return nonempty && bounded_length && portable_ascii &&
+      !dot_segment && !parent_segment;
+  }
+
+  pub fnc network_bind(bool parsed_socket, bool loopback_address): bool {
+    return parsed_socket && loopback_address;
+  }
+
+  pub fnc bearer_matches(bool bearer_header, bool exact_token_bytes): bool {
+    return bearer_header && exact_token_bytes;
+  }
+
+  pub fnc self_check(): bool {
+    return path_component(true,true,true,false,false) &&
+      !path_component(true,true,true,false,true) &&
+      !path_component(true,true,true,true,false) &&
+      !path_component(true,true,false,false,false) &&
+      network_bind(true,true) && !network_bind(true,false) &&
+      bearer_matches(true,true) && !bearer_matches(false,true);
+  }
+end
