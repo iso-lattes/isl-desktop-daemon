@@ -897,7 +897,6 @@ mod generation_digest_tests {
     }
 }
 
-
 // Finite safety exploration of production admission primitives.  The AttoLang
 // policy in src/attolang is a reference and is NOT executed by these tests.
 #[cfg(test)]
@@ -913,9 +912,9 @@ mod formal_admission_tests {
             for second in alphabet {
                 for third in alphabet {
                     let candidate = format!("{first}{second}{third}");
-                    let permitted = candidate
-                        .bytes()
-                        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'));
+                    let permitted = candidate.bytes().all(|byte| {
+                        byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.')
+                    });
                     assert_eq!(validate_path_component(&candidate).is_ok(), permitted);
                     let key = CellKey {
                         tenant_id: candidate.clone(),
@@ -939,9 +938,7 @@ mod formal_admission_tests {
 
     #[test]
     fn finite_token_comparison_agrees_with_exact_byte_equality() {
-        let values: [&[u8]; 8] = [
-            b"", b"a", b"b", b"ab", b"ba", b"abc", b"abd", &[0, 255],
-        ];
+        let values: [&[u8]; 8] = [b"", b"a", b"b", b"ab", b"ba", b"abc", b"abd", &[0, 255]];
         for left in values {
             for right in values {
                 assert_eq!(constant_time_eq(left, right), left == right);
