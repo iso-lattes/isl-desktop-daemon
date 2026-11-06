@@ -896,3 +896,64 @@ mod generation_digest_tests {
         return Ok(());
     }
 }
+
+// Finite safety exploration of production admission primitives.  The AttoLang
+// policy in src/attolang is a reference and is NOT executed by these tests.
+#[cfg(test)]
+mod formal_admission_tests {
+    use super::*;
+
+    #[test]
+    fn path_component_model_rejects_escape_and_preserves_tenant_prefixes() {
+        let alphabet = ['a', '.', '/', '\\', '_', '-', '%', ' ', '\n', ':'];
+        let root = PathBuf::from("/isolattes-formal-root");
+        let mut explored = 0usize;
+        for first in alphabet {
+            for second in alphabet {
+                for third in alphabet {
+                    let candidate = format!("{first}{second}{third}");
+                    let permitted = candidate.bytes().all(|byte| {
+                        byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.')
+                    });
+                    assert_eq!(validate_path_component(&candidate).is_ok(), permitted);
+                    let key = CellKey {
+                        tenant_id: candidate.clone(),
+                        deployment_id: "generation-1".to_owned(),
+                    };
+                    let derived = artifact_path(&root, &key, "worker.js");
+                    assert_eq!(derived.is_ok(), permitted);
+                    if let Ok(path) = derived {
+                        assert!(path.starts_with(&root));
+                        assert!(path.ends_with("generation-1/worker.js"));
+                    }
+                    explored += 1;
+                }
+            }
+        }
+        assert_eq!(explored, 1_000);
+        for denied in ["", ".", "..", "../escape", "tenant/other", "a\\b", "a%2fb"] {
+            assert!(validate_path_component(denied).is_err(), "{denied:?}");
+        }
+    }
+
+    #[test]
+    fn finite_token_comparison_agrees_with_exact_byte_equality() {
+        let values: [&[u8]; 8] = [b"", b"a", b"b", b"ab", b"ba", b"abc", b"abd", &[0, 255]];
+        for left in values {
+            for right in values {
+                assert_eq!(constant_time_eq(left, right), left == right);
+                assert_eq!(constant_time_eq(left, right), constant_time_eq(right, left));
+            }
+        }
+    }
+
+    #[test]
+    fn network_bind_admission_is_loopback_only() {
+        for allowed in ["127.0.0.1:0", "127.0.1.1:9000", "[::1]:1234"] {
+            assert!(parse_loopback_addr(allowed).is_ok(), "{allowed}");
+        }
+        for denied in ["0.0.0.0:1", "192.0.2.1:5000", "[::]:1", "[2001:db8::1]:99"] {
+            assert!(parse_loopback_addr(denied).is_err(), "{denied}");
+        }
+    }
+}
